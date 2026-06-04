@@ -6,7 +6,7 @@ import type { Page } from '@siteforge/shared';
 
 export async function getStaticPaths() {
   // Slugs handled by explicit routes — never generate them from Payload.
-  const reserved = new Set(['home', 'terms', 'privacy', '404', 'blog', 'rss.xml']);
+  const reserved = new Set(['home', 'terms', 'privacy', '404', 'blog', 'rss.xml', 'search']);
   const pages = await getAllPages();
   return pages
     .filter((p) => p.slug && !reserved.has(p.slug))
@@ -30,8 +30,8 @@ if (!page) {
 }
 
 const metadata = {
-  title: page.seo?.metaTitle ?? page.title,
-  description: page.seo?.metaDescription ?? undefined,
+  title: page.meta?.title ?? page.title,
+  description: page.meta?.description ?? undefined,
 };
 ---
 

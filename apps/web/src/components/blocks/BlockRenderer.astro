@@ -18,6 +18,7 @@ import Brands from '~/components/widgets/Brands.astro';
 import CallToAction from '~/components/widgets/CallToAction.astro';
 import BlogLatestPosts from '~/components/widgets/BlogLatestPosts.astro';
 import Note from '~/components/widgets/Note.astro';
+import PayloadFormBlock from '~/components/widgets/FormWidget.astro';
 
 interface Props {
   blocks?: Page['layout'];
@@ -42,6 +43,7 @@ const widgets: Record<string, any> = {
   CallToAction,
   BlogLatestPosts,
   Note,
+  PayloadFormBlock,
 };
 
 const resolved = (blocks ?? [])

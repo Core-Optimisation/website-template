@@ -16,7 +16,7 @@ interface Item { title?: string; description?: string; icon?: string; callToActi
 ### Renderer mapping rules derived from this
 - `anchorId` → `id`  (widgets use `id`, never `anchorId`).
 - `isDark` passes through unchanged.
-- `background` field is **NOT** forwarded — AstroWind's `bg` expects raw HTML/slot markup, not a keyword. Left to the widget default.
+- `background` (`default | muted | none`) → `bg` raw markup (Step 11). `muted` paints a theme-driven `--aw-color-bg-muted` tint; `default`/`none` leave the widget's transparent default. Mapping is centralised in `SURFACE` in `lib/blocks.ts`.
 - Media upload doc → `{ src, alt, width, height }`. Widgets spread `{...image}` into `<Image>` (e.g. `Hero`, `Content`), and Astro requires `width`/`height` for remote images, so all four keys are forwarded. Payload stores `width`/`height` on image uploads.
 - `richText` → HTML string for `content` props.
 - Remote (CMS) image URLs are passed through un-optimized (CMS host intentionally **not** allow-listed in `astro.config` so static builds stay decoupled from a running CMS).
@@ -44,6 +44,6 @@ interface Item { title?: string; description?: string; icon?: string; callToActi
 
 ## Disagreements with master prompt (renderer-side fixes)
 1. **Note**: prompt block has `content`; widget wants `description`. Renderer maps `content → description`.
-2. **anchorId/background**: prompt uses `anchorId`/`background`; widgets use `id`/`bg`. Renderer maps `anchorId → id`, drops `background`.
+2. **anchorId/background**: prompt uses `anchorId`/`background`; widgets use `id`/`bg`. Renderer maps `anchorId → id`, and `background → bg` markup via the `SURFACE` map (Step 11 design system).
 3. **Media**: renderer's `media()` returns `{src, alt, width, height}` (prompt only mentioned `{src, alt}`).
 4. **Pricing `price`/`amount`**: widget `Price.price` and `Stat.amount` accept `number | string`; seed/strings pass through fine.

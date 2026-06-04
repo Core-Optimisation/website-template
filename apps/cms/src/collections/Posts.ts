@@ -26,14 +26,5 @@ export const Posts: CollectionConfig = {
     { name: 'category', type: 'relationship', relationTo: 'categories' },
     { name: 'tags', type: 'array', fields: [{ name: 'tag', type: 'text' }] },
     { name: 'publishedAt', type: 'date' },
-    {
-      name: 'seo',
-      type: 'group',
-      fields: [
-        { name: 'metaTitle', type: 'text' },
-        { name: 'metaDescription', type: 'textarea' },
-        { name: 'ogImage', type: 'upload', relationTo: 'media' },
-      ],
-    },
   ],
 };

@@ -1,0 +1,95 @@
+---
+import SiteLayout from '~/layouts/SiteLayout.astro';
+import { getSearchDocs } from '~/lib/payload';
+import { getPermalink } from '~/utils/permalinks';
+
+const docs = await getSearchDocs();
+
+// Pre-compute a lightweight, serialisable index for the client.
+const index = docs.map((d) => {
+  const isPage = d.doc?.relationTo === 'pages';
+  const slug = d.slug ?? '';
+  const url = isPage ? (slug === 'home' || slug === '' ? '/' : `/${slug}`) : getPermalink(slug, 'post');
+  return {
+    title: d.title ?? 'Untitled',
+    excerpt: d.excerpt ?? '',
+    type: isPage ? 'Page' : 'Post',
+    url,
+  };
+});
+
+const metadata = {
+  title: 'Search',
+  description: 'Search the site.',
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <section class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
+    <h1 class="mb-6 text-3xl font-bold tracking-tight sm:text-4xl">Search</h1>
+
+    <div class="relative mb-8">
+      <input
+        id="search-input"
+        type="search"
+        autocomplete="off"
+        placeholder="Search pages and posts…"
+        class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-md shadow-sm dark:border-gray-700 dark:bg-slate-900"
+      />
+    </div>
+
+    <p id="search-status" class="mb-4 text-sm text-muted"></p>
+    <ul id="search-results" class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800"></ul>
+  </section>
+
+  <script id="search-index" type="application/json" set:html={JSON.stringify(index)} />
+
+  <script is:inline>
+    (() => {
+      const data = JSON.parse(document.getElementById('search-index').textContent || '[]');
+      const input = document.getElementById('search-input');
+      const list = document.getElementById('search-results');
+      const status = document.getElementById('search-status');
+
+      const escapeHtml = (s) =>
+        s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      function render(query) {
+        const q = query.trim().toLowerCase();
+        const matches = !q
+          ? []
+          : data.filter(
+              (d) => d.title.toLowerCase().includes(q) || d.excerpt.toLowerCase().includes(q)
+            );
+
+        if (!q) {
+          status.textContent = `Type to search ${data.length} item${data.length === 1 ? '' : 's'}.`;
+          list.innerHTML = '';
+          return;
+        }
+
+        status.textContent = `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query}”.`;
+        list.innerHTML = matches
+          .map(
+            (d) => `
+              <li class="py-4">
+                <a href="${d.url}" class="group block">
+                  <span class="mb-1 inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-slate-800 dark:text-gray-300">${d.type}</span>
+                  <h3 class="text-lg font-semibold group-hover:text-primary">${escapeHtml(d.title)}</h3>
+                  ${d.excerpt ? `<p class="mt-1 text-sm text-muted">${escapeHtml(d.excerpt)}</p>` : ''}
+                </a>
+              </li>`
+          )
+          .join('');
+      }
+
+      // Support deep-linking via ?q=
+      const params = new URLSearchParams(window.location.search);
+      const initial = params.get('q') || '';
+      input.value = initial;
+      render(initial);
+
+      input.addEventListener('input', (e) => render(e.target.value));
+    })();
+  </script>
+</SiteLayout>

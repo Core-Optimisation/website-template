@@ -55,8 +55,8 @@ const mapPayloadPost = (post: PayloadPost): Post => {
     draft: post._status === 'draft',
 
     metadata: {
-      title: post.seo?.metaTitle ?? undefined,
-      description: post.seo?.metaDescription ?? undefined,
+      title: post.meta?.title ?? undefined,
+      description: post.meta?.description ?? undefined,
     },
 
     bodyHtml,

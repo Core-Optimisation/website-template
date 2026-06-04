@@ -7,8 +7,8 @@ import { getPageBySlug } from '~/lib/payload';
 const page = await getPageBySlug('home');
 
 const metadata = {
-  title: page?.seo?.metaTitle ?? page?.title,
-  description: page?.seo?.metaDescription ?? undefined,
+  title: page?.meta?.title ?? page?.title,
+  description: page?.meta?.description ?? undefined,
   ignoreTitleTemplate: !page,
 };
 ---

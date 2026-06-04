@@ -29,7 +29,28 @@ export const SiteSettings: GlobalConfig = {
       type: 'group',
       fields: [
         { name: 'mode', type: 'select', defaultValue: 'system', options: ['light', 'dark', 'system'] },
-        { name: 'accentColor', type: 'text' },
+        {
+          name: 'accentColor',
+          type: 'text',
+          admin: { description: 'Primary brand colour, hex e.g. #7a8b3a' },
+        },
+        {
+          name: 'headingFont',
+          type: 'text',
+          admin: { description: 'CSS font-family stack for headings (optional)' },
+        },
+        {
+          name: 'bodyFont',
+          type: 'text',
+          admin: { description: 'CSS font-family stack for body text (optional)' },
+        },
+        {
+          name: 'radius',
+          type: 'select',
+          defaultValue: 'md',
+          options: ['none', 'sm', 'md', 'lg', 'full'],
+          admin: { description: 'Global corner radius scale' },
+        },
       ],
     },
   ],

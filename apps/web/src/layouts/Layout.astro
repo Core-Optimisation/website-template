@@ -15,6 +15,8 @@ import BasicScripts from '~/components/common/BasicScripts.astro';
 // Comment the line below to disable View Transitions
 import { ClientRouter } from 'astro:transitions';
 
+import { getSiteSettings } from '~/lib/payload';
+
 import type { MetaData as MetaDataType } from '~/types';
 
 export interface Props {
@@ -23,6 +25,23 @@ export interface Props {
 
 const { metadata = {} } = Astro.props;
 const { language, textDirection } = I18N;
+
+/* ---- Theme token bridge: SiteSettings.theme → CSS custom properties ---- */
+const settings = await getSiteSettings();
+const theme = settings?.theme ?? {};
+
+const accent = theme.accentColor || '#7a8b3a';
+const RADIUS: Record<string, string> = {
+  none: '0',
+  sm: '.25rem',
+  md: '.5rem',
+  lg: '1rem',
+  full: '9999px',
+};
+const radius = RADIUS[theme.radius ?? 'md'] ?? RADIUS.md;
+const headingFont = theme.headingFont || '';
+const bodyFont = theme.bodyFont || '';
+const mode = theme.mode ?? 'system';
 ---
 
 <!doctype html>
@@ -32,6 +51,35 @@ const { language, textDirection } = I18N;
     <Favicons />
     <CustomStyles />
     <ApplyColorMode />
+
+    <!-- Theme tokens (Step 11.2): re-skins brand accents + radius from the admin -->
+    <style is:global define:vars={{ awAccent: accent, awRadius: radius }}>
+      :root,
+      .dark {
+        --aw-color-primary: var(--awAccent);
+        --aw-color-secondary: var(--awAccent);
+        --aw-color-accent: var(--awAccent);
+        --aw-radius: var(--awRadius);
+      }
+    </style>
+    {
+      (headingFont || bodyFont) && (
+        <style is:global define:vars={{ awHeadingFont: headingFont, awBodyFont: bodyFont }}>
+          {headingFont ? ':root { --aw-font-heading: var(--awHeadingFont); }' : ''}
+          {bodyFont ? ':root { --aw-font-sans: var(--awBodyFont); }' : ''}
+        </style>
+      )
+    }
+    {
+      mode !== 'system' && (
+        <script is:inline define:vars={{ forcedMode: mode }}>
+          // theme.mode = light|dark forces AstroWind's existing dark-mode mechanism.
+          localStorage.setItem('theme', forcedMode);
+          document.documentElement.classList.toggle('dark', forcedMode === 'dark');
+        </script>
+      )
+    }
+
     <Metadata {...metadata} />
     <SiteVerification />
     <Analytics />

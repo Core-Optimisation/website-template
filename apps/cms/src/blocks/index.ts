@@ -191,6 +191,22 @@ export const NoteBlock: Block = {
   fields: [{ name: 'content', type: 'text' }],
 };
 
+export const FormBlock: Block = {
+  slug: 'formBlock',
+  interfaceName: 'FormBlock',
+  fields: [
+    ...headlineFields,
+    {
+      name: 'form',
+      type: 'relationship',
+      relationTo: 'forms',
+      required: true,
+      admin: { description: 'Choose a form built with the Form Builder.' },
+    },
+    ...appearanceFields,
+  ],
+};
+
 /** Registered on the Pages `layout` blocks field. */
 export const pageBlocks: Field = {
   name: 'layout',
@@ -208,5 +224,6 @@ export const pageBlocks: Field = {
     CallToActionBlock,
     BlogLatestPostsBlock,
     NoteBlock,
+    FormBlock,
   ],
 };

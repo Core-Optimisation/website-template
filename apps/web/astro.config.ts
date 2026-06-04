@@ -16,6 +16,7 @@ import node from '@astrojs/node';
 import type { AstroIntegration } from 'astro';
 
 import astrowind from './vendor/integration';
+import payloadRedirects from './src/integrations/payload-redirects';
 
 import { readingTimeRemarkPlugin, responsiveTablesRehypePlugin } from './src/utils/frontmatter';
 
@@ -81,6 +82,9 @@ export default defineConfig({
     astrowind({
       config: './src/config.yaml',
     }),
+
+    // Emit dist/_redirects from the Payload Redirects collection (static only).
+    ...(isSsr ? [] : [payloadRedirects()]),
   ],
 
   image: {
@@ -105,7 +109,18 @@ export default defineConfig({
   },
 
   vite: {
+    // Keep the Vite cache outside OneDrive to avoid EPERM crashes caused by
+    // OneDrive locking files mid-sync during the initial dependency optimisation.
+    cacheDir: 'C:/Temp/siteforge-web-vite',
     plugins: [tailwindcss()],
+    server: {
+      watch: {
+        // OneDrive's file-locking crashes chokidar's native FSEvents/inotify
+        // watcher (exit -1). Polling avoids all native watch API calls.
+        usePolling: true,
+        interval: 1000,
+      },
+    },
     resolve: {
       alias: {
         '~': path.resolve(__dirname, './src'),

@@ -4,11 +4,28 @@ import { richTextToHtml } from './richtext';
 
 type Block = NonNullable<Page['layout']>[number];
 
-/** Common base props every widget understands. */
-function base(block: Record<string, unknown>) {
+/**
+ * Maps the `background` appearance token to AstroWind's `bg` prop, which expects
+ * raw background markup (see WIDGET_PROPS.md). `default`/`none` fall back to the
+ * widget's transparent default; `muted` paints a soft, theme-driven section tint.
+ */
+const SURFACE: Record<string, string | undefined> = {
+  default: undefined,
+  none: undefined,
+  muted:
+    '<div class="absolute inset-0 bg-[var(--aw-color-bg-muted)] dark:bg-[var(--aw-color-bg-muted-dark)]"></div>',
+};
+
+/**
+ * Converts the shared `appearanceFields` (anchorId / isDark / background) into the
+ * appearance props every AstroWind widget understands. This is the single seam
+ * where Payload appearance → theme presentation; never fork a widget for theming.
+ */
+function appearance(block: Record<string, unknown>) {
   return {
     id: (block.anchorId as string) || undefined,
-    isDark: (block.isDark as boolean) ?? false,
+    isDark: (block.isDark as boolean) || undefined,
+    bg: SURFACE[(block.background as string) ?? 'default'],
   };
 }
 
@@ -24,7 +41,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
         // centered -> Hero, split -> Hero2
         widget: block.variant === 'split' ? 'Hero2' : 'Hero',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -39,7 +56,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
         widget:
           block.variant === 'twocol' ? 'Features2' : block.variant === 'image' ? 'Features3' : 'Features',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -52,7 +69,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'Content',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -70,7 +87,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
         // timeline -> Steps, twocol -> Steps2 (no image)
         widget: block.variant === 'twocol' ? 'Steps2' : 'Steps',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -84,7 +101,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'Stats',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -95,7 +112,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'FAQs',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -107,7 +124,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'Pricing',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -121,7 +138,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'Testimonials',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -138,7 +155,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'Brands',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -151,7 +168,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'CallToAction',
         props: {
-          ...base(block),
+          ...appearance(block),
           tagline: block.tagline,
           title: block.title,
           subtitle: block.subtitle,
@@ -162,7 +179,7 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
       return {
         widget: 'BlogLatestPosts',
         props: {
-          ...base(block),
+          ...appearance(block),
           title: block.title,
           information: block.information,
           count: block.count ?? 4,
@@ -180,7 +197,19 @@ export function transformBlock(block: Block): { widget: string; props: Record<st
           description: block.content,
         },
       };
+    case 'formBlock':
+      return {
+        widget: 'PayloadFormBlock',
+        props: {
+          ...appearance(block),
+          tagline: block.tagline,
+          title: block.title,
+          subtitle: block.subtitle,
+          form: block.form,
+        },
+      };
     default:
       return null;
   }
 }
+

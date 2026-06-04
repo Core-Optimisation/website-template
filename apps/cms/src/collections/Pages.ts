@@ -21,14 +21,5 @@ export const Pages: CollectionConfig = {
       hooks: { beforeValidate: [formatSlug('title')] },
     },
     pageBlocks, // 12 blocks from Appendix A
-    {
-      name: 'seo',
-      type: 'group',
-      fields: [
-        { name: 'metaTitle', type: 'text' },
-        { name: 'metaDescription', type: 'textarea' },
-        { name: 'ogImage', type: 'upload', relationTo: 'media' },
-      ],
-    },
   ],
 };

@@ -13,13 +13,13 @@ function richText(...paragraphs: string[]) {
   return {
     root: {
       type: 'root',
-      format: '',
+      format: '' as const,
       indent: 0,
       version: 1,
       direction: 'ltr' as const,
       children: paragraphs.map((text) => ({
         type: 'paragraph',
-        format: '',
+        format: '' as const,
         indent: 0,
         version: 1,
         direction: 'ltr' as const,
@@ -103,9 +103,10 @@ const seed = async () => {
   const diningImg = await upsertMedia('dining.jpg', 'Long-table dining experience', 1);
   const producersImg = await upsertMedia('producers.jpg', 'Local food producers', 2);
   const logoImg = await upsertMedia('logo.png', 'Waterford Festival of Food logo', 4);
-  const sponsors = await Promise.all(
-    [1, 2, 3, 4].map((i) => upsertMedia(`sponsor-${i}.png`, `Festival sponsor ${i}`, i)),
-  );
+  const sponsors: number[] = [];
+  for (let i = 1; i <= 4; i++) {
+    sponsors.push(await upsertMedia(`sponsor-${i}.png`, `Festival sponsor ${i}`, i));
+  }
 
   // 3. Categories ----------------------------------------------------------
   const upsertCategory = async (title: string, slug: string, description: string) => {
@@ -451,7 +452,115 @@ const seed = async () => {
     },
   ]);
 
-  // 6. Navigation global ---------------------------------------------------
+  // 6. Contact form + page -------------------------------------------------
+  const upsertForm = async (title: string, data: Record<string, unknown>): Promise<number> => {
+    const found = await payload.find({
+      collection: 'forms',
+      where: { title: { equals: title } },
+      limit: 1,
+    });
+    if (found.totalDocs > 0) {
+      await payload.update({
+        collection: 'forms',
+        id: found.docs[0].id,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: data as any,
+      });
+      payload.logger.info(`Updated form “${title}”.`);
+      return found.docs[0].id as number;
+    }
+    const created = await payload.create({
+      collection: 'forms',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { title, ...data } as any,
+    });
+    payload.logger.info(`Created form “${title}”.`);
+    return created.id as number;
+  };
+
+  const contactFormId = await upsertForm('Contact', {
+    submitButtonLabel: 'Send message',
+    confirmationType: 'message',
+    confirmationMessage: richText(
+      'Thanks for getting in touch — a member of the festival team will reply within a few days.',
+    ),
+    fields: [
+      { blockType: 'text', name: 'full-name', label: 'Full name', required: true, width: 100 },
+      { blockType: 'email', name: 'email', label: 'Email address', required: true, width: 100 },
+      {
+        blockType: 'select',
+        name: 'topic',
+        label: 'What is your enquiry about?',
+        required: true,
+        width: 100,
+        options: [
+          { label: 'General enquiry', value: 'general' },
+          { label: 'Tickets & programme', value: 'tickets' },
+          { label: 'Becoming a stallholder', value: 'stallholder' },
+          { label: 'Sponsorship', value: 'sponsorship' },
+          { label: 'Press & media', value: 'press' },
+        ],
+      },
+      { blockType: 'textarea', name: 'message', label: 'Message', required: true, width: 100 },
+    ],
+  });
+
+  await upsertPage('Contact', 'contact', [
+    {
+      blockType: 'hero',
+      variant: 'centered',
+      tagline: 'Contact',
+      title: 'Get in touch',
+      subtitle: 'Questions about the festival, tickets or taking part? Send us a message.',
+    },
+    {
+      blockType: 'formBlock',
+      title: 'Send us a message',
+      subtitle: 'We read every message and aim to reply within a few days.',
+      form: contactFormId,
+    },
+  ]);
+
+  // 7. Redirects (demo) ----------------------------------------------------
+  const upsertRedirect = async (from: string, to: Record<string, unknown>) => {
+    const found = await payload.find({
+      collection: 'redirects',
+      where: { from: { equals: from } },
+      limit: 1,
+    });
+    if (found.totalDocs > 0) {
+      await payload.update({
+        collection: 'redirects',
+        id: found.docs[0].id,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { from, to } as any,
+      });
+      payload.logger.info(`Updated redirect ${from}.`);
+    } else {
+      await payload.create({
+        collection: 'redirects',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { from, to } as any,
+      });
+      payload.logger.info(`Created redirect ${from}.`);
+    }
+  };
+
+  // Resolve the Programme page so a reference redirect can point at it.
+  const programmePage = await payload.find({
+    collection: 'pages',
+    where: { slug: { equals: 'programme' } },
+    limit: 1,
+  });
+  if (programmePage.totalDocs > 0) {
+    await upsertRedirect('/whats-on', {
+      type: 'reference',
+      reference: { relationTo: 'pages', value: programmePage.docs[0].id },
+    });
+  }
+  await upsertRedirect('/get-in-touch', { type: 'custom', url: '/contact' });
+
+  // 8. Navigation global ---------------------------------------------------
   await payload.updateGlobal({
     slug: 'navigation',
     data: {
@@ -461,6 +570,8 @@ const seed = async () => {
           { text: 'Programme', href: '/programme' },
           { text: 'Plan Your Visit', href: '/plan-your-visit' },
           { text: 'Volunteer', href: '/volunteer' },
+          { text: 'Contact', href: '/contact' },
+          { text: 'Search', href: '/search' },
         ],
         actions: [{ variant: 'primary', text: 'View 2026 Programme', href: '/programme' }],
       },
@@ -473,6 +584,8 @@ const seed = async () => {
               { text: 'Plan Your Visit', href: '/plan-your-visit' },
               { text: 'About', href: '/about' },
               { text: 'Volunteer', href: '/volunteer' },
+              { text: 'Contact', href: '/contact' },
+              { text: 'Search', href: '/search' },
             ],
           },
           {
@@ -497,7 +610,7 @@ const seed = async () => {
     },
   });
 
-  // 7. SiteSettings global -------------------------------------------------
+  // 9. SiteSettings global -------------------------------------------------
   await payload.updateGlobal({
     slug: 'siteSettings',
     data: {

@@ -1,0 +1,202 @@
+---
+import type { Form } from '@siteforge/shared';
+import { getApiUrl } from '~/lib/env';
+import { richTextToHtml } from '~/lib/richtext';
+import Button from '~/components/ui/Button.astro';
+
+interface Props {
+  form: Form;
+}
+
+const { form } = Astro.props;
+
+const apiUrl = getApiUrl();
+const fields = form.fields ?? [];
+
+// Resolve the confirmation behaviour at build time so the client script can
+// act on it without another round-trip.
+const confirmType = form.confirmationType ?? 'message';
+const confirmHtml = form.confirmationMessage
+  ? richTextToHtml(form.confirmationMessage)
+  : '<p>Thanks — your message has been received.</p>';
+
+let redirectUrl = '';
+if (confirmType === 'redirect' && form.redirect) {
+  if (form.redirect.type === 'custom') {
+    redirectUrl = form.redirect.url ?? '';
+  } else if (form.redirect.reference && typeof form.redirect.reference.value === 'object') {
+    const slug = form.redirect.reference.value.slug;
+    redirectUrl = slug ? (slug === 'home' ? '/' : `/${slug}`) : '';
+  }
+}
+
+const inputClass =
+  'py-3 px-4 block w-full text-md rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900';
+---
+
+<form
+  class="payload-form flex flex-col gap-5"
+  data-form-id={String(form.id)}
+  data-endpoint={`${apiUrl}/form-submissions`}
+  data-confirm-type={confirmType}
+  data-redirect-url={redirectUrl}
+>
+  {
+    fields.map((field) => {
+      const width = field.blockType !== 'message' && field.width ? `${field.width}%` : '100%';
+      switch (field.blockType) {
+        case 'message':
+          return <div class="prose dark:prose-invert max-w-none" set:html={richTextToHtml(field.message)} />;
+        case 'textarea':
+          return (
+            <div style={`width:${width}`}>
+              {field.label && (
+                <label for={field.name} class="mb-1 block text-sm font-medium">
+                  {field.label}
+                  {field.required && <span class="text-red-600"> *</span>}
+                </label>
+              )}
+              <textarea
+                id={field.name}
+                name={field.name}
+                rows={4}
+                required={field.required ?? false}
+                class={inputClass}
+              >{field.defaultValue ?? ''}</textarea>
+            </div>
+          );
+        case 'select':
+          return (
+            <div style={`width:${width}`}>
+              {field.label && (
+                <label for={field.name} class="mb-1 block text-sm font-medium">
+                  {field.label}
+                  {field.required && <span class="text-red-600"> *</span>}
+                </label>
+              )}
+              <select
+                id={field.name}
+                name={field.name}
+                required={field.required ?? false}
+                class={inputClass}
+              >
+                <option value="">{field.placeholder ?? 'Please select…'}</option>
+                {(field.options ?? []).map((opt) => (
+                  <option value={opt.value} selected={field.defaultValue === opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        case 'checkbox':
+          return (
+            <div class="flex items-start gap-3" style={`width:${width}`}>
+              <input
+                id={field.name}
+                name={field.name}
+                type="checkbox"
+                checked={field.defaultValue ?? false}
+                required={field.required ?? false}
+                class="mt-1 h-4 w-4 rounded border-gray-300"
+              />
+              {field.label && (
+                <label for={field.name} class="select-none text-sm">
+                  {field.label}
+                  {field.required && <span class="text-red-600"> *</span>}
+                </label>
+              )}
+            </div>
+          );
+        default: {
+          // text, email, number, country, state — all render as inputs.
+          const inputType =
+            field.blockType === 'email' ? 'email' : field.blockType === 'number' ? 'number' : 'text';
+          return (
+            <div style={`width:${width}`}>
+              {field.label && (
+                <label for={field.name} class="mb-1 block text-sm font-medium">
+                  {field.label}
+                  {field.required && <span class="text-red-600"> *</span>}
+                </label>
+              )}
+              <input
+                id={field.name}
+                name={field.name}
+                type={inputType}
+                required={field.required ?? false}
+                value={field.blockType === 'number' || field.blockType === 'text' ? (field.defaultValue ?? '') : ''}
+                class={inputClass}
+              />
+            </div>
+          );
+        }
+      }
+    })
+  }
+
+  <div class="grid">
+    <Button variant="primary" type="submit">{form.submitButtonLabel ?? 'Submit'}</Button>
+  </div>
+
+  <p class="form-error hidden text-sm text-red-600" role="alert"></p>
+  <div class="form-confirmation hidden prose dark:prose-invert max-w-none" set:html={confirmHtml}></div>
+</form>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form.payload-form').forEach((form) => {
+    const endpoint = form.dataset.endpoint!;
+    const formId = Number(form.dataset.formId);
+    const confirmType = form.dataset.confirmType;
+    const redirectUrl = form.dataset.redirectUrl;
+    const errorEl = form.querySelector<HTMLElement>('.form-error');
+    const confirmEl = form.querySelector<HTMLElement>('.form-confirmation');
+    const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl?.classList.add('hidden');
+
+      const submissionData = Array.from(new FormData(form).entries())
+        .filter(([field]) => field !== 'disclaimer' || true)
+        .map(([field, value]) => ({ field, value: String(value) }));
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.dataset.label = submitBtn.textContent ?? '';
+        submitBtn.textContent = 'Sending…';
+      }
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ form: formId, submissionData }),
+        });
+
+        if (!res.ok) throw new Error(`Submission failed (${res.status})`);
+
+        if (confirmType === 'redirect' && redirectUrl) {
+          window.location.assign(redirectUrl);
+          return;
+        }
+
+        form.querySelectorAll('input, textarea, select, button').forEach((el) => {
+          (el as HTMLElement).style.display = 'none';
+        });
+        confirmEl?.classList.remove('hidden');
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = 'Sorry, something went wrong. Please try again.';
+          errorEl.classList.remove('hidden');
+        }
+        console.error('[payload-form]', err);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (submitBtn.dataset.label) submitBtn.textContent = submitBtn.dataset.label;
+        }
+      }
+    });
+  });
+</script>

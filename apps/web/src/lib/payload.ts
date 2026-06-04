@@ -1,5 +1,5 @@
 import { getApiToken, getApiUrl, getRenderMode } from './env';
-import type { Media, Navigation, Page, Post, SiteSetting, Category } from '@siteforge/shared';
+import type { Media, Navigation, Page, Post, SiteSetting, Category, Form, Redirect, Search } from '@siteforge/shared';
 
 interface QueryOptions {
   /** Include drafts (only honoured in ssr mode with an API token). */
@@ -106,4 +106,30 @@ export async function getCategories(opts?: QueryOptions): Promise<Category[]> {
   return result?.docs ?? [];
 }
 
-export type { Media, Navigation, Page, Post, SiteSetting, Category, ListResult };
+/* -------------------------------- Forms --------------------------------- */
+
+export async function getFormById(id: number | string, opts?: QueryOptions): Promise<Form | null> {
+  return api<Form>(`/forms/${id}`, opts);
+}
+
+export async function getFormByTitle(title: string, opts?: QueryOptions): Promise<Form | null> {
+  const where = `where[title][equals]=${encodeURIComponent(title)}&limit=1`;
+  const result = await api<ListResult<Form>>(`/forms?${where}`, opts);
+  return result?.docs?.[0] ?? null;
+}
+
+/* -------------------------------- Search -------------------------------- */
+
+export async function getSearchDocs(opts?: QueryOptions): Promise<Search[]> {
+  const result = await api<ListResult<Search>>('/search?limit=1000&sort=-priority', opts);
+  return result?.docs ?? [];
+}
+
+/* ------------------------------- Redirects ------------------------------ */
+
+export async function getRedirects(opts?: QueryOptions): Promise<Redirect[]> {
+  const result = await api<ListResult<Redirect>>('/redirects?limit=1000', { depth: 1, ...opts });
+  return result?.docs ?? [];
+}
+
+export type { Media, Navigation, Page, Post, SiteSetting, Category, Form, Redirect, Search, ListResult };
