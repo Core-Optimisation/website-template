@@ -1,4 +1,4 @@
-# SiteForge
+# Core Site Builder
 
 A **self-hosted, WordPress-like website builder**. Content authors stack
 **blocks** in a [Payload v3](https://payloadcms.com) admin UI; the public site —
