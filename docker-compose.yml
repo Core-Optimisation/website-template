@@ -1,0 +1,58 @@
+# SiteForge — full stack for local/self-hosted deployment.
+#
+#   docker compose up --build
+#
+# Defaults: SQLite (file in the cms volume) + local media (volume).
+# To use Postgres, uncomment the `db` service and set DB_ADAPTER/POSTGRES_URL.
+services:
+  cms:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.cms
+    environment:
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:-change-me-in-production}
+      PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-http://localhost:3000}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:4321}
+      DB_ADAPTER: ${DB_ADAPTER:-sqlite}
+      DATABASE_URI: ${DATABASE_URI:-file:/data/siteforge.db}
+      POSTGRES_URL: ${POSTGRES_URL:-}
+      MEDIA_ADAPTER: ${MEDIA_ADAPTER:-local}
+      MEDIA_DIR: /data/media
+    ports:
+      - '3000:3000'
+    volumes:
+      - cms-data:/data
+    restart: unless-stopped
+    # depends_on:
+    #   - db
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+      args:
+        RENDER_MODE: ${RENDER_MODE:-static}
+        PAYLOAD_PUBLIC_SERVER_URL: http://cms:3000
+    environment:
+      RENDER_MODE: ${RENDER_MODE:-static}
+      PAYLOAD_PUBLIC_SERVER_URL: http://cms:3000
+    ports:
+      - '4321:4321'
+    depends_on:
+      - cms
+    restart: unless-stopped
+
+  # Uncomment for Postgres instead of SQLite.
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: siteforge
+  #     POSTGRES_PASSWORD: siteforge
+  #     POSTGRES_DB: siteforge
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+volumes:
+  cms-data:
+  # db-data:

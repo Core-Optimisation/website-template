@@ -1,0 +1,37 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import Header from '~/components/widgets/Header.astro';
+import Footer from '~/components/widgets/Footer.astro';
+import Announcement from '~/components/widgets/Announcement.astro';
+
+import { headerData as fallbackHeader, footerData as fallbackFooter } from '~/navigation';
+import { getNavigation } from '~/lib/payload';
+import { toHeaderData, toFooterData } from '~/lib/nav';
+
+import type { MetaData } from '~/types';
+
+export interface Props {
+  metadata?: MetaData;
+}
+
+const { metadata } = Astro.props;
+
+const nav = await getNavigation();
+const headerData = nav?.header ? toHeaderData(nav) : fallbackHeader;
+const footerData = nav?.footer ? toFooterData(nav) : fallbackFooter;
+---
+
+<Layout metadata={metadata}>
+  <slot name="announcement">
+    <Announcement />
+  </slot>
+  <slot name="header">
+    <Header {...headerData} isSticky showRssFeed showToggleTheme />
+  </slot>
+  <main>
+    <slot />
+  </main>
+  <slot name="footer">
+    <Footer {...footerData} />
+  </slot>
+</Layout>

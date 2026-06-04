@@ -1,0 +1,42 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import Header from '~/components/widgets/Header.astro';
+import Footer from '~/components/widgets/Footer.astro';
+
+import { getNavigation, getSiteSettings } from '~/lib/payload';
+import { toHeaderData, toFooterData } from '~/lib/nav';
+import { headerData as fallbackHeader, footerData as fallbackFooter } from '~/navigation';
+
+import type { MetaData } from '~/types';
+
+export interface Props {
+  metadata?: MetaData;
+}
+
+const { metadata } = Astro.props;
+
+// Pull nav + settings from Payload; fall back to the bundled defaults so the
+// site still renders if the CMS is unreachable during a static build.
+const [nav, settings] = await Promise.all([getNavigation(), getSiteSettings()]);
+
+const header = nav?.header ? toHeaderData(nav) : fallbackHeader;
+const footer = nav?.footer ? toFooterData(nav) : fallbackFooter;
+
+const resolvedMeta: MetaData = {
+  ...metadata,
+  title: metadata?.title ?? settings?.defaultSeo?.metaTitle ?? settings?.siteName ?? undefined,
+  description: metadata?.description ?? settings?.defaultSeo?.metaDescription ?? settings?.tagline ?? undefined,
+};
+---
+
+<Layout metadata={resolvedMeta}>
+  <slot name="header">
+    <Header {...header} isSticky showRssFeed showToggleTheme />
+  </slot>
+  <main>
+    <slot />
+  </main>
+  <slot name="footer">
+    <Footer {...footer} />
+  </slot>
+</Layout>

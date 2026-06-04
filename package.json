@@ -1,0 +1,26 @@
+{
+  "name": "siteforge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SiteForge — a self-hosted, WordPress-like website builder (Payload v3 CMS + AstroWind).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "cms": "pnpm --filter cms",
+    "web": "pnpm --filter web",
+    "seed": "pnpm --filter cms seed",
+    "generate:types": "pnpm --filter cms generate:types",
+    "generate:importmap": "pnpm --filter cms generate:importmap"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  }
+}

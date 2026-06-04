@@ -1,0 +1,31 @@
+---
+import SiteLayout from '~/layouts/SiteLayout.astro';
+import BlockRenderer from '~/components/blocks/BlockRenderer.astro';
+import { getPageBySlug } from '~/lib/payload';
+
+// The homepage is the Payload page with slug "home".
+const page = await getPageBySlug('home');
+
+const metadata = {
+  title: page?.seo?.metaTitle ?? page?.title,
+  description: page?.seo?.metaDescription ?? undefined,
+  ignoreTitleTemplate: !page,
+};
+---
+
+<SiteLayout metadata={metadata}>
+  {
+    page ? (
+      <BlockRenderer blocks={page.layout} />
+    ) : (
+      <section class="mx-auto max-w-3xl px-6 py-24 text-center">
+        <h1 class="text-3xl font-bold">SiteForge is ready</h1>
+        <p class="mt-4 text-muted">
+          No <code>home</code> page found yet. Open the CMS admin at
+          <a class="underline" href="http://localhost:3000/admin">/admin</a> and create a Page with
+          the slug <code>home</code>, or run <code>pnpm seed</code> to load the demo content.
+        </p>
+      </section>
+    )
+  }
+</SiteLayout>

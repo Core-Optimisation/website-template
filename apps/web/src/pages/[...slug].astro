@@ -1,0 +1,40 @@
+---
+import SiteLayout from '~/layouts/SiteLayout.astro';
+import BlockRenderer from '~/components/blocks/BlockRenderer.astro';
+import { getAllPages, getPageBySlug } from '~/lib/payload';
+import type { Page } from '@siteforge/shared';
+
+export async function getStaticPaths() {
+  // Slugs handled by explicit routes — never generate them from Payload.
+  const reserved = new Set(['home', 'terms', 'privacy', '404', 'blog', 'rss.xml']);
+  const pages = await getAllPages();
+  return pages
+    .filter((p) => p.slug && !reserved.has(p.slug))
+    .map((p) => ({ params: { slug: p.slug }, props: { page: p } }));
+}
+
+interface Props {
+  page?: Page;
+}
+
+const { slug } = Astro.params;
+let { page } = Astro.props as Props;
+
+// In SSR mode getStaticPaths props are absent — fetch on demand.
+if (!page && slug) {
+  page = (await getPageBySlug(Array.isArray(slug) ? slug.join('/') : slug)) ?? undefined;
+}
+
+if (!page) {
+  return Astro.redirect('/404');
+}
+
+const metadata = {
+  title: page.seo?.metaTitle ?? page.title,
+  description: page.seo?.metaDescription ?? undefined,
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <BlockRenderer blocks={page.layout} />
+</SiteLayout>

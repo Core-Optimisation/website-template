@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.astro
+**/.turbo
+**/*.db
+**/*.db-*
+media
+.git
+.env
+**/.env
+*.log

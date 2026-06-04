@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+.next/
+.turbo/
+.astro/
+apps/web/dist/
+apps/cms/.next/
+
+# Payload generated
+apps/cms/src/payload-types.ts.bak
+
+# SiteForge state (the backup unit) — do not commit live data
+*.db
+*.db-shm
+*.db-wal
+siteforge.db
+apps/cms/siteforge.db
+media/
+apps/cms/media/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db

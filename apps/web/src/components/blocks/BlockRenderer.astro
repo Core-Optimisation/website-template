@@ -1,0 +1,57 @@
+---
+import type { Page } from '@siteforge/shared';
+import { transformBlock } from '~/lib/blocks';
+
+import Hero from '~/components/widgets/Hero.astro';
+import Hero2 from '~/components/widgets/Hero2.astro';
+import Features from '~/components/widgets/Features.astro';
+import Features2 from '~/components/widgets/Features2.astro';
+import Features3 from '~/components/widgets/Features3.astro';
+import Content from '~/components/widgets/Content.astro';
+import Steps from '~/components/widgets/Steps.astro';
+import Steps2 from '~/components/widgets/Steps2.astro';
+import Stats from '~/components/widgets/Stats.astro';
+import FAQs from '~/components/widgets/FAQs.astro';
+import Pricing from '~/components/widgets/Pricing.astro';
+import Testimonials from '~/components/widgets/Testimonials.astro';
+import Brands from '~/components/widgets/Brands.astro';
+import CallToAction from '~/components/widgets/CallToAction.astro';
+import BlogLatestPosts from '~/components/widgets/BlogLatestPosts.astro';
+import Note from '~/components/widgets/Note.astro';
+
+interface Props {
+  blocks?: Page['layout'];
+}
+
+const { blocks = [] } = Astro.props;
+
+const widgets: Record<string, any> = {
+  Hero,
+  Hero2,
+  Features,
+  Features2,
+  Features3,
+  Content,
+  Steps,
+  Steps2,
+  Stats,
+  FAQs,
+  Pricing,
+  Testimonials,
+  Brands,
+  CallToAction,
+  BlogLatestPosts,
+  Note,
+};
+
+const resolved = (blocks ?? [])
+  .map((block) => transformBlock(block))
+  .filter((r): r is { widget: string; props: Record<string, unknown> } => r !== null);
+---
+
+{
+  resolved.map(({ widget, props }) => {
+    const Widget = widgets[widget];
+    return Widget ? <Widget {...props} /> : null;
+  })
+}
